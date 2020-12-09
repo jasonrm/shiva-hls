@@ -28,12 +28,14 @@ func downloadFile(filepath string, url string) (err error) {
 
 	resp, err := http.Get(url)
 	if err != nil {
+		os.Remove(filepath)
 		panic(err)
 	}
 	defer resp.Body.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
+		os.Remove(filepath)
 		panic(err)
 	}
 
