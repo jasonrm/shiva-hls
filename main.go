@@ -22,19 +22,19 @@ var (
 func downloadFile(filepath string, url string) (err error) {
 	out, err := os.Create(filepath)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer out.Close()
 
 	resp, err := http.Get(url)
 	if err != nil {
-		return err
+		panic(err)
 	}
 	defer resp.Body.Close()
 
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return err
+		panic(err)
 	}
 
 	return nil
