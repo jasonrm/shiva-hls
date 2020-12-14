@@ -2,21 +2,27 @@ package main
 
 import (
 	"bytes"
+	"database/sql"
 	"flag"
 	"fmt"
+	"github.com/kyoh86/xdg"
+	"gitlab.com/jasonrm/shiva-hls/source"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"os/exec"
 	"path"
+	"strings"
 
 	"github.com/quangngotan95/go-m3u8/m3u8"
 )
 
 var (
-	playlistUrl = flag.String("url", "", "playlist location")
-	outDir      = flag.String("out", ".", "output directory")
+	outDir             = flag.String("out", "twitch", "output directory")
+	TwitchClientId     = flag.String("twitch-client-id", "", "")
+	TwitchClientSecret = flag.String("twitch-client-secret", "", "")
 )
 
 func downloadFile(filepath string, url string) (err error) {
@@ -66,45 +72,63 @@ func downloadQueue(playlistUrl string, outDir string) chan string {
 
 func main() {
 	flag.Parse()
+	twitchUsername := flag.Arg(0)
 
-	queue := downloadQueue(*playlistUrl, path.Base(*outDir))
+	dbPath := path.Join(xdg.DataHome(), "shiva-hls.db")
+	cacheDb, _ := sql.Open("sqlite3", dbPath)
 
-	_ = os.MkdirAll(*outDir, os.ModePerm)
+	twitch := source.NewTwitch(*TwitchClientId, *TwitchClientSecret, cacheDb)
 
-	resp, err := http.Get(*playlistUrl)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
+	for _, videoUrl := range twitch.Videos(twitchUsername) {
+		fmt.Println(path.Base(videoUrl))
+		dlDir := path.Join(path.Clean(*outDir), strings.ToLower(twitchUsername), path.Base(videoUrl))
+		_ = os.MkdirAll(dlDir, os.ModePerm)
 
-	contents, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	// show the HTML code as a string %s
-	//fmt.Printf("%s\n", contents)
+		ytOut := exec.Command("youtube-dl", "-g", videoUrl)
+		ytPlaylist, ytErr := ytOut.Output()
+		if ytErr != nil {
+			panic(ytErr)
+		}
+		playlistUrl := string(ytPlaylist)
+		playlistUrl = strings.TrimSpace(playlistUrl)
 
-	playlist, err := m3u8.ReadString(string(contents))
-	if err != nil {
-		panic(err)
-	}
+		queue := downloadQueue(playlistUrl, dlDir)
 
-	if playlist.IsValid() {
-		outPlaylist := path.Join(*outDir, "playlist.m3u8")
-		out, err := os.Create(outPlaylist)
+		resp, err := http.Get(playlistUrl)
+		if err != nil {
+			panic(err)
+		}
+		defer resp.Body.Close()
+
+		contents, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			panic(err)
 		}
 
-		_, err = io.Copy(out, bytes.NewBuffer(contents))
+		playlist, err := m3u8.ReadString(string(contents))
 		if err != nil {
 			panic(err)
 		}
-	}
 
-	for _, i := range playlist.Items {
-		if i, ok := i.(*m3u8.SegmentItem); ok {
-			queue <- i.Segment
+		if playlist.IsValid() {
+			outPlaylist := path.Join(dlDir, "playlist.m3u8")
+			out, err := os.Create(outPlaylist)
+			if err != nil {
+				panic(err)
+			}
+
+			_, err = io.Copy(out, bytes.NewBuffer(contents))
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		c := 0
+		for _, i := range playlist.Items {
+			if i, ok := i.(*m3u8.SegmentItem); ok {
+				c++
+				queue <- i.Segment
+			}
 		}
 	}
 }
