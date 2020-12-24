@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/kyoh86/xdg"
-	"gitlab.com/jasonrm/shiva-hls/source"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,6 +13,10 @@ import (
 	"os/exec"
 	"path"
 	"strings"
+	"time"
+
+	"github.com/kyoh86/xdg"
+	"gitlab.com/jasonrm/shiva-hls/source"
 
 	"github.com/quangngotan95/go-m3u8/m3u8"
 )
@@ -63,7 +65,7 @@ func downloadQueue(playlistUrl string, outDir string) chan string {
 				_ = downloadFile(outFile, remoteUri.String())
 				continue
 			}
-			fmt.Printf("exists: %s\n", file)
+			//fmt.Printf("exists: %s\n", file)
 		}
 	}(queue)
 
@@ -123,6 +125,8 @@ func main() {
 			}
 		}
 
+		fmt.Printf("playlist: %s\n", playlistUrl)
+
 		c := 0
 		for _, i := range playlist.Items {
 			if i, ok := i.(*m3u8.SegmentItem); ok {
@@ -130,5 +134,6 @@ func main() {
 				queue <- i.Segment
 			}
 		}
+		time.Sleep(1 * time.Minute)
 	}
 }
