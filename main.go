@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -61,7 +62,7 @@ func downloadQueue(playlistUrl string, outDir string) chan string {
 			remoteUri, _ := url.Parse(u.String())
 			remoteUri.Path = path.Join(path.Dir(u.Path), file)
 			if _, err := os.Stat(outFile); os.IsNotExist(err) {
-				fmt.Printf("download: %s -> %s\n", remoteUri, outFile)
+				fmt.Printf("download: %s\n", outFile)
 				_ = downloadFile(outFile, remoteUri.String())
 				continue
 			}
@@ -81,12 +82,12 @@ func main() {
 
 	twitch := source.NewTwitch(*TwitchClientId, *TwitchClientSecret, cacheDb)
 
-	for _, videoUrl := range twitch.Videos(twitchUsername) {
-		fmt.Println(path.Base(videoUrl))
-		dlDir := path.Join(path.Clean(*outDir), strings.ToLower(twitchUsername), path.Base(videoUrl))
+	for _, video := range twitch.Videos(twitchUsername) {
+		fmt.Println(path.Base(video.URL))
+		dlDir := path.Join(path.Clean(*outDir), strings.ToLower(twitchUsername), path.Base(video.URL))
 		_ = os.MkdirAll(dlDir, os.ModePerm)
 
-		ytOut := exec.Command("youtube-dl", "-g", videoUrl)
+		ytOut := exec.Command("youtube-dl", "-g", video.URL)
 		ytPlaylist, ytErr := ytOut.Output()
 		if ytErr != nil {
 			panic(ytErr)
@@ -134,6 +135,21 @@ func main() {
 				queue <- i.Segment
 			}
 		}
+
+		outMetadata := path.Join(dlDir, "metadata.json")
+		out, err := os.Create(outMetadata)
+		if err != nil {
+			panic(err)
+		}
+		metadata, err := json.Marshal(video)
+		if err != nil {
+			panic(err)
+		}
+		_, err = io.Copy(out, bytes.NewBuffer(metadata))
+		if err != nil {
+			panic(err)
+		}
+
 		time.Sleep(1 * time.Minute)
 	}
 }

@@ -3,7 +3,6 @@ package source
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/nicklaw5/helix"
 	"log"
@@ -77,11 +76,10 @@ func (t *Twitch) UserId(username string) (string, error) {
 	return "", errors.New("unknown user")
 }
 
-func (t *Twitch) Videos(username string) []string {
+func (t *Twitch) Videos(username string) []helix.Video {
 	userId, err := t.UserId(username)
 	if err != nil {
 		panic(err)
-		return []string{}
 	}
 
 	videos, err := t.client.GetVideos(&helix.VideosParams{
@@ -90,17 +88,14 @@ func (t *Twitch) Videos(username string) []string {
 
 	if err != nil {
 		panic(err)
-		return []string{}
 	}
 
-	fmt.Println(videos.Error)
-
-	urls := make([]string, 0, 25)
+	urls := make([]helix.Video, 0, 25)
 	for _, v := range videos.Data.Videos {
 		if v.Type != "archive" {
 			continue
 		}
-		urls = append(urls, v.URL)
+		urls = append(urls, v)
 	}
 
 	return urls
