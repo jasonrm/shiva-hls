@@ -24,9 +24,9 @@ import (
 
 var (
 	outDir             = flag.String("out", "twitch", "output directory")
-	TwitchClientId     = flag.String("twitch-client-id", "", "")
-	TwitchClientSecret = flag.String("twitch-client-secret", "", "")
-	downloadCount = flag.Int("count", 0, "number of streams to download (0: all")
+	TwitchClientId     = os.Getenv("TWITCH_CLIENT_ID")
+	TwitchClientSecret = os.Getenv("TWITCH_CLIENT_SECRET")
+	downloadCount      = flag.Int("count", 0, "number of streams to download (0 = all)")
 )
 
 func downloadFile(filepath string, url string) (err error) {
@@ -81,7 +81,7 @@ func main() {
 	dbPath := path.Join(xdg.DataHome(), "shiva-hls.db")
 	cacheDb, _ := sql.Open("sqlite3", dbPath)
 
-	twitch := source.NewTwitch(*TwitchClientId, *TwitchClientSecret, cacheDb)
+	twitch := source.NewTwitch(TwitchClientId, TwitchClientSecret, cacheDb)
 
 	for i, video := range twitch.Videos(twitchUsername) {
 		if *downloadCount > 0 && i >= *downloadCount {
