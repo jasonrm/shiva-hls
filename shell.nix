@@ -13,5 +13,7 @@ mkShell {
 
   shellHook = ''
     export VIRTUAL_ENV=nix-$(basename $(pwd))
+    export XDG_DATA_HOME=~/.local/share
+    mkdir -p $XDG_DATA_HOME
   '';
 }

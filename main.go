@@ -26,6 +26,7 @@ var (
 	outDir             = flag.String("out", "twitch", "output directory")
 	TwitchClientId     = flag.String("twitch-client-id", "", "")
 	TwitchClientSecret = flag.String("twitch-client-secret", "", "")
+	downloadCount = flag.Int("count", 0, "number of streams to download (0: all")
 )
 
 func downloadFile(filepath string, url string) (err error) {
@@ -82,12 +83,16 @@ func main() {
 
 	twitch := source.NewTwitch(*TwitchClientId, *TwitchClientSecret, cacheDb)
 
-	for _, video := range twitch.Videos(twitchUsername) {
+	for i, video := range twitch.Videos(twitchUsername) {
+		if *downloadCount > 0 && i >= *downloadCount {
+			break;
+		}
+
 		fmt.Println(path.Base(video.URL))
 		dlDir := path.Join(path.Clean(*outDir), strings.ToLower(twitchUsername), path.Base(video.URL))
 		_ = os.MkdirAll(dlDir, os.ModePerm)
 
-		ytOut := exec.Command("youtube-dl", "-g", video.URL)
+		ytOut := exec.Command("yt-dlp", "-g", video.URL)
 		ytPlaylist, ytErr := ytOut.Output()
 		if ytErr != nil {
 			panic(ytErr)

@@ -84,18 +84,22 @@ func (t *Twitch) Videos(username string) []helix.Video {
 
 	videos, err := t.client.GetVideos(&helix.VideosParams{
 		UserID: userId,
+		First: 100,
 	})
 
 	if err != nil {
 		panic(err)
 	}
 
-	urls := make([]helix.Video, 0, 25)
+	urls := make([]helix.Video, 0, 100)
 	for _, v := range videos.Data.Videos {
 		if v.Type != "archive" {
 			continue
 		}
 		urls = append(urls, v)
+		if len(urls) >= 100 {
+			break
+		}
 	}
 
 	return urls
