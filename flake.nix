@@ -7,7 +7,12 @@
     flake = false;
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }:
+  outputs = {
+    self,
+    nixpkgs,
+    flake-utils,
+    ...
+  }:
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
     in rec {
@@ -19,7 +24,7 @@
       apps.shiva-hls = {
         type = "app";
         program = "${packages.shiva-hls}/bin/shiva-hls";
-      };      
+      };
 
       devShells.default = pkgs.mkShell {
         nativeBuildInputs = [
@@ -30,10 +35,11 @@
           pkgs.go
         ];
       };
-    }) // {
+    })
+    // {
       overlays.default = final: prev: {
-        shiva-hls = final.callPackage ./nix/package.nix { };
-      };      
+        shiva-hls = final.callPackage ./nix/package.nix {};
+      };
       nixosModules = {
         default = import ./nix/module.nix;
       };

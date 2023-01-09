@@ -44,7 +44,7 @@ in {
       description = "Twitch HLS stream downloader";
       wants = ["network-online.target"];
       after = ["network.target" "network-online.target"];
-      path = [ pkgs.yt-dlp ];
+      path = [pkgs.yt-dlp];
       # TODO: Use EnvironmentFile instead
       environment = {
         TWITCH_CLIENT_ID = cfg.twitchClientId;
