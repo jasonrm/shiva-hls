@@ -1,20 +1,10 @@
-{ pkgs ? import <nixpkgs> { }
-, lib ? pkgs.lib
-, buildGoModule ? pkgs.buildGoModule
-}:
-buildGoModule rec {
-  pname = "shiva-hls";
-  version = "1.0.0";
-
-  src = ./.;
-
-  vendorSha256 = "sha256-owmyrctnL3p0uKjRhuOn0b/Wd59ZTUNrYwCufyLpMsc=";
-  # vendorSha256 = lib.fakeHash;
-
-  meta = with lib; {
-    description = "Download Twitch HLS streams";
-    license = licenses.mit;
-    homepage = "https://github.com/jasonrm/shiva-hls";
-    maintainer = [ "jason@mcneil.dev" ];
-  };
-}
+(import
+  (
+    let lock = builtins.fromJSON (builtins.readFile ./flake.lock); in
+    fetchTarball {
+      url = "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev}.tar.gz";
+      sha256 = lock.nodes.flake-compat.locked.narHash;
+    }
+  )
+  { src = ./.; }
+).defaultNix
