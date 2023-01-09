@@ -33,6 +33,9 @@ in {
       downloadDirectory = mkOption {
         type = str;
       };
+      frequencySec = mkOption {
+        type = str;
+      };
     };
   };
 
@@ -49,9 +52,15 @@ in {
       };
       serviceConfig = {
         ExecStart = "${shiva-hls-bulk}/bin/shiva-hls-bulk ${concatStringsSep " " cfg.channels}";
-        RestartSec = 600;
-        Restart = "always";
       };
-    };    
+    };
+    systemd.timers.shiva-hls = {
+      description = "Twitch Downloader Timer";
+      wantedBy = ["timers.target"];
+      timerConfig = {
+        OnBootSec = "${cfg.frequencySec}";
+        OnUnitActiveSec = "${cfg.frequencySec}";
+      };
+    };
   };
 }
