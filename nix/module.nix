@@ -9,6 +9,7 @@ with lib; let
 
   shiva-hls-bulk = pkgs.writeShellScriptBin "shiva-hls-bulk" ''
     for CHANNEL in $@; do
+      echo "Checking $CHANNEL"
       ${pkgs.shiva-hls}/bin/shiva-hls --out ${cfg.downloadDirectory} ${cfg.additionalArgs} $CHANNEL
     done
   '';
