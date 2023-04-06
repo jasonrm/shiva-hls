@@ -40,8 +40,8 @@ in {
     };
   };
 
-  config = {
-    systemd.services.shiva-hls = mkIf cfg.enable {
+  config = mkIf cfg.enable {
+    systemd.services.shiva-hls = {
       description = "Twitch HLS stream downloader";
       wants = ["network-online.target"];
       after = ["network.target" "network-online.target"];
